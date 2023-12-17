@@ -1,23 +1,23 @@
 import os
 import json
+import sys
 
 #load optables
 jsonFile = open(r'assembler_py\tables\optable.json','r')
 optables = json.loads(jsonFile.read())
 jsonFile.close()
 
-#load intermediate_file
-intermediate_file = open(r"assembler_py\Output\intermediate_file.txt",mode="w")
+#crearte intermediate_file
+intermediate_file = open(r"assembler_py\Output\intermediate_file.txt",mode="w+")
 
 def search_optable(str):
     '''
     search from optable
     '''
-    if optables.get(str) != "None": #if opcode not exist
-        return False
-    return True
-
-
+    for i in optables:
+        if i == str: 
+            return True #if opcode not exist
+    return False
 
 sybol_table = {}
 def search_symbol(string,LOCCTR):
@@ -26,7 +26,7 @@ def search_symbol(string,LOCCTR):
     '''
     SYMBOL = string[0]
     OPCODE = string[1]
-    OPERAND = string[2]
+    OPERAND = string[2].replace('\n','') #replace '\n'
     if OPCODE =='.' or OPERAND =='.': return 0 #如果為程式註解則跳過
     
     if sybol_table.get(SYMBOL) == "None": #if symbol exist
@@ -34,7 +34,7 @@ def search_symbol(string,LOCCTR):
         return 3
     
     sybol_table[SYMBOL] = LOCCTR # record symbol and LOCCTR
-    intermediate_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t\n") #write into intermediate_file
+    intermediate_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\n") #write into intermediate_file
     
     if search_optable(OPCODE):
         return 3 #add LOCCTR
@@ -47,10 +47,8 @@ def search_symbol(string,LOCCTR):
     elif OPCODE == "BYTE":
         temp = OPERAND.replace("C","").replace("\'","")
         if temp.find("X")!=-1: return 1 #如果有X則回傳1
-        print(temp)
         return len(temp) #add LOCCTR
     else:
-        #print(f"ERROR")
         return 3
 
 def add(LOCCTR,size):
@@ -63,26 +61,95 @@ def add(LOCCTR,size):
     hex_string = hex(number).replace('0x','') #tranform into hex
     return hex_string
 
+def program_length(start,end):
+    '''
+    return the length of program 
+    '''
+    hex_start = start
+    hex_end = end
+    start_int = int(hex_start, 16) #tranform into deciaml
+    end_int = int(hex_end, 16) #tranform into deciaml
+    end_int -= start_int #end loc - start loc = program length
+    return end_int
+    
+def gen_opject(string):
+    '''
+    generate object code and write into object file
+    '''
+    LOCCTR = string[0]
+    SYMBOL = string[1]
+    OPCODE = string[2]
+    OPERAND = string[3].replace('\n','')
+    
+    if search_optable(OPCODE): #if in optable
+        if not OPERAND in sybol_table: #if not in symbol table
+            object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\tERROR\n") #write into intermediate_file
+            return 
+        
+        op_num = optables[OPCODE] #get opcode
+        OPERAND_LOC = sybol_table[OPERAND] #get symbol_table OPERAND LOC
+        object_code = str(op_num) + str(OPERAND_LOC)
+        object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
+        return
+    
+    object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\tERROR\n") #write into intermediate_file
+        
+
 if __name__ == "__main__":
     # read source code file
     f = open(r"assembler_py\Figure\Figure2.1.txt",mode="r")
-    file_list = f.readlines() #read file as a list
-    #print(file_list)
+    source_list = f.readlines() #read file as a list
     f.close()
 
     # PASS1
     LOCCTR = "0"
-    string = file_list[0].split( ) #read first line
+    string = source_list[0].split( ) #read first line
     if string[1] == "START": LOCCTR = string[2] #check if start
+    PROGRAM_START = LOCCTR #PROGRAM start location
+    intermediate_file.write(f"{LOCCTR}\t{string[0]}\t{string[1]}\t{string[2]}\n")
     
-    for i in range(1,len(file_list)):
-        string = file_list[i].replace(' ','') #replace ' '
+    for i in range(1,len(source_list)):
+        string = source_list[i].replace(' ','') #replace ' '
         string = string.split('\t') #read line
-        print(string)
-        if string[1]=="END": break # if end break
+        if string[1]=="END":
+            intermediate_file.write(f"\t{string[1]}\t{string[2]}\n") #write into intermediate_file
+            break # if end break
         
         size = search_symbol(string,LOCCTR) #return the memory size
-        #print(size)
         LOCCTR = add(LOCCTR,size)
+    
+    PROGRAM_LENGTH = program_length(PROGRAM_START,LOCCTR) #program length
+    print("program length: ",PROGRAM_LENGTH)
+    #print(sybol_table)
+    
+    intermediate_file.close() #close intermediate_file filestream
+    
+    # PASS2
+    #load intermediate_file
+    intermediate_file = open(r"assembler_py\Output\intermediate_file.txt",mode="r")
+    intermediate_list = intermediate_file.readlines() #read file as a list
+    #print(intermediate_list)
+    
+    #create object_file
+    object_file = open(r"assembler_py\Output\object_file.txt",mode="w")
+    
+    string = intermediate_list[0].split('\t') #read first line
+    if string[2] != "START":  #check if start
+        print("ERROR")
+        sys.exit(0)
+    
+    for i in range(1,len(intermediate_list)):
+        string = intermediate_list[i].split('\t') #read line
+        #print(string)
+        if string[1]=="END": # if end break
+            object_file.write(f"\t{string[1]}\t{string[2]}\n") #write into intermediate_file
+            break
         
-    print(sybol_table)
+        #print(string)
+        gen_opject(string)
+        
+        
+    intermediate_file.close() #close intermediate_file filestream
+    
+    
+    
