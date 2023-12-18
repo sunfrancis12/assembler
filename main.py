@@ -27,7 +27,9 @@ def search_symbol(string,LOCCTR):
     SYMBOL = string[0]
     OPCODE = string[1]
     OPERAND = string[2].replace('\n','') #replace '\n'
-    if OPCODE =='.' or OPERAND =='.': return 0 #如果為程式註解則跳過
+    if OPCODE =='.' or OPERAND =='.': #如果為程式註解則跳過
+        intermediate_file.write(f"\t{OPCODE}\t{OPERAND}\t\n")
+        return 0 
     
     if sybol_table.get(SYMBOL) == "None": #if symbol exist
         print(f"symbol \"{SYMBOL}\" already exist!")
@@ -81,7 +83,17 @@ def gen_opject(string):
     OPCODE = string[2]
     OPERAND = string[3].replace('\n','')
     
+    if SYMBOL =='.': #如果為程式註解則跳過
+        object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t\t\n")
+        return 
+    
     if search_optable(OPCODE): #if in optable
+        if OPERAND == "": #只有指令
+            op_num = optables[OPCODE] #get opcode
+            object_code = f"{op_num}0000"
+            object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into intermediate_file
+            return 
+                
         if not OPERAND in sybol_table: #if not in symbol table
             object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\tERROR\n") #write into intermediate_file
             return 
@@ -94,20 +106,20 @@ def gen_opject(string):
     elif OPCODE == "WORD":
         temp = int(OPERAND)
         hex_string = hex(temp).replace("0x","") #轉16進制
-        object_code = '{0:06s}'.format(hex_string)
+        object_code = '{0:0>6s}'.format(hex_string) #不滿六位則往前補0
         object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
         return 
     elif OPCODE == "BYTE":
-        if OPERAND.find('X'):
+        if OPERAND.find('X')!=-1: 
             object_code = OPERAND.replace("\'","").replace("X","")
-        elif OPERAND.find('C'):
+        elif OPERAND.find('C')!=-1:
             temp = OPERAND.replace("\'","").replace("C","")
             word_list = list(temp) #將字串拆成一個自元的list
             
             object_code = ""
             for i in word_list:
                 word_asc = ord(i) #將自元轉acsii碼
-                object_code += str(hex(word_asc)) #acsii碼轉成16進位並加入字串
+                object_code += str(hex(word_asc).replace("0x","")) #acsii碼轉成16進位並加入字串
         object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
     elif OPCODE == "RESW" or OPCODE == "RESB":
         object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t\n") #write into object_file
