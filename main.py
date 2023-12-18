@@ -95,7 +95,9 @@ def gen_opject(string):
             return 
                 
         if not OPERAND in sybol_table: #if not in symbol table
-            object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\tERROR\n") #write into intermediate_file
+            op_num = optables[OPCODE] #get opcode
+            object_code = f"{op_num}XXXX"
+            object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into intermediate_file
             return 
         
         op_num = optables[OPCODE] #get opcode
