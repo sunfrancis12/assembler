@@ -3,12 +3,12 @@ import json
 import sys
 
 #load optables
-jsonFile = open(r'assembler_py\tables\optable.json','r')
+jsonFile = open(r'tables\optable.json','r')
 optables = json.loads(jsonFile.read())
 jsonFile.close()
 
 #crearte intermediate_file
-intermediate_file = open(r"assembler_py\Output\intermediate_file.txt",mode="w+")
+intermediate_file = open(r"Output\intermediate_file.txt",mode="w+")
 
 def search_optable(str):
     '''
@@ -91,13 +91,34 @@ def gen_opject(string):
         object_code = str(op_num) + str(OPERAND_LOC)
         object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
         return
-    
-    object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\tERROR\n") #write into intermediate_file
-        
+    elif OPCODE == "WORD":
+        temp = int(OPERAND)
+        hex_string = hex(temp).replace("0x","") #轉16進制
+        object_code = '{0:06s}'.format(hex_string)
+        object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
+        return 
+    elif OPCODE == "BYTE":
+        if OPERAND.find('X'):
+            object_code = OPERAND.replace("\'","").replace("X","")
+        elif OPERAND.find('C'):
+            temp = OPERAND.replace("\'","").replace("C","")
+            word_list = list(temp) #將字串拆成一個自元的list
+            
+            object_code = ""
+            for i in word_list:
+                word_asc = ord(i) #將自元轉acsii碼
+                object_code += str(hex(word_asc)) #acsii碼轉成16進位並加入字串
+        object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
+    elif OPCODE == "RESW" or OPCODE == "RESB":
+        object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t\n") #write into object_file
+        return 
+    else:
+        object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\tERROR\n") #write into intermediate_file
+        return         
 
 if __name__ == "__main__":
     # read source code file
-    f = open(r"assembler_py\Figure\Figure2.1.txt",mode="r")
+    f = open(r"Figure\Figure2.1.txt",mode="r")
     source_list = f.readlines() #read file as a list
     f.close()
 
@@ -112,7 +133,7 @@ if __name__ == "__main__":
         string = source_list[i].replace(' ','') #replace ' '
         string = string.split('\t') #read line
         if string[1]=="END":
-            intermediate_file.write(f"\t{string[1]}\t{string[2]}\n") #write into intermediate_file
+            intermediate_file.write(f"\t{string[1]}\t{string[2]}\t\n") #write into intermediate_file
             break # if end break
         
         size = search_symbol(string,LOCCTR) #return the memory size
@@ -126,12 +147,12 @@ if __name__ == "__main__":
     
     # PASS2
     #load intermediate_file
-    intermediate_file = open(r"assembler_py\Output\intermediate_file.txt",mode="r")
+    intermediate_file = open(r"Output\intermediate_file.txt",mode="r")
     intermediate_list = intermediate_file.readlines() #read file as a list
     #print(intermediate_list)
     
     #create object_file
-    object_file = open(r"assembler_py\Output\object_file.txt",mode="w")
+    object_file = open(r"Output\object_file.txt",mode="w")
     
     string = intermediate_list[0].split('\t') #read first line
     if string[2] != "START":  #check if start
@@ -142,7 +163,7 @@ if __name__ == "__main__":
         string = intermediate_list[i].split('\t') #read line
         #print(string)
         if string[1]=="END": # if end break
-            object_file.write(f"\t{string[1]}\t{string[2]}\n") #write into intermediate_file
+            object_file.write(f"\t{string[1]}\t{string[2]}\t\n") #write into intermediate_file
             break
         
         #print(string)
