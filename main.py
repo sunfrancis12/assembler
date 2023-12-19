@@ -73,7 +73,20 @@ def program_length(start,end):
     end_int = int(hex_end, 16) #tranform into deciaml
     end_int -= start_int #end loc - start loc = program length
     return end_int
-    
+
+def index_addressing(op_num,OPERAND):
+    '''
+    dealing index addressing mode
+    '''
+    INDEX_OPERAND = OPERAND.replace(",","").replace("X","") #找出要index的OPREAND
+    INDEX_OPERAND_LOC_LIST = list(sybol_table[INDEX_OPERAND]) #index的OPREAND的位址,並將其每個bit分割成一個list
+    hex_string = INDEX_OPERAND_LOC_LIST[0]
+    number = int(hex_string, 16) #tranform into deciaml
+    number += 8 # format 3 "X" bit
+    INDEX_OPERAND_LOC_LIST[0] = hex(number).replace('0x','') #tranform into hex then put back to list
+
+    return str(op_num) + "".join(INDEX_OPERAND_LOC_LIST)
+
 def gen_opject(string):
     '''
     generate object code and write into object file
@@ -88,19 +101,18 @@ def gen_opject(string):
         return 
     
     if search_optable(OPCODE): #if in optable
+        op_num = optables[OPCODE] #get opcode
+        
         if OPERAND == "": #只有指令
-            op_num = optables[OPCODE] #get opcode
             object_code = f"{op_num}0000"
             object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into intermediate_file
             return 
-                
-        if not OPERAND in sybol_table: #if not in symbol table
-            op_num = optables[OPCODE] #get opcode
-            object_code = f"{op_num}XXXX"
-            object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into intermediate_file
-            return 
         
-        op_num = optables[OPCODE] #get opcode
+        if OPERAND.find(",") != -1: #為index addressing mode
+            object_code = index_addressing(op_num,OPERAND)
+            object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
+            return
+        
         OPERAND_LOC = sybol_table[OPERAND] #get symbol_table OPERAND LOC
         object_code = str(op_num) + str(OPERAND_LOC)
         object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
