@@ -8,7 +8,7 @@ optables = json.loads(jsonFile.read())
 jsonFile.close()
 
 #crearte intermediate_file
-intermediate_file = open(r"Output\intermediate_file.txt",mode="w+")
+intermediate_file = open(r"Output\intermediate_file2.txt",mode="w+")
 
 def search_optable(str):
     '''
@@ -18,6 +18,26 @@ def search_optable(str):
         if i == str: 
             return True #if opcode not exist
     return False
+
+def check_format2(OPERAND):
+    '''
+    find if format2
+    '''
+    
+    RIGISTER = ["A","X","L","B","S","T","F"]
+    if OPERAND.find(",") != -1: #可能有多數OPERAND
+        OPERANDS = OPERAND.split(',') #把變數整理成一個list
+        for i in OPERANDS: ##檢查是否都是rigister組成
+            for j in RIGISTER:
+                if(i!=j): return 3
+        return 2
+    
+    for i in RIGISTER: ##檢查是否都是rigister組成
+        if(OPERAND == i): return 2
+    
+    return 3 #format 3
+    
+
 
 sybol_table = {}
 def search_symbol(string,LOCCTR):
@@ -39,7 +59,9 @@ def search_symbol(string,LOCCTR):
     intermediate_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\n") #write into intermediate_file
     
     if search_optable(OPCODE):
-        return 3 #add LOCCTR
+        if(SYMBOL).find("+") != -1: #為format 4
+            return 4 #add LOCCTR
+        return check_format2(OPERAND) 
     elif OPCODE == "WORD":
         return 3 #add LOCCTR
     elif OPCODE == "RESW":
@@ -118,6 +140,7 @@ def gen_object(string):
         object_code = str(op_num) + str(OPERAND_LOC)
         object_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\t{object_code}\n") #write into object_file
         return
+    
     elif OPCODE == "WORD":
         temp = int(OPERAND)
         hex_string = hex(temp).replace("0x","") #轉16進制
@@ -145,7 +168,7 @@ def gen_object(string):
 
 if __name__ == "__main__":
     # read source code file
-    f = open(r"Figure\Figure2.1.txt",mode="r")
+    f = open(r"Figure\Figure2.5.txt",mode="r")
     source_list = f.readlines() #read file as a list
     f.close()
 
@@ -175,12 +198,12 @@ if __name__ == "__main__":
     
     # PASS2
     #load intermediate_file
-    intermediate_file = open(r"Output\intermediate_file.txt",mode="r")
+    intermediate_file = open(r"Output\intermediate_file2.txt",mode="r")
     intermediate_list = intermediate_file.readlines() #read file as a list
     #print(intermediate_list)
     
     #create object_file
-    object_file = open(r"Output\object_file.txt",mode="w")
+    object_file = open(r"Output\object_file2.txt",mode="w")
     
     string = intermediate_list[0].split('\t') #read first line
     if string[2] != "START":  #check if start
@@ -195,7 +218,7 @@ if __name__ == "__main__":
             break
         
         #print(string)
-        gen_object(string)
+        #gen_object(string)
         
         
     intermediate_file.close() #close intermediate_file filestream
