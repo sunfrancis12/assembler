@@ -21,15 +21,18 @@ def search_optable(str):
 
 def check_format2(OPERAND):
     '''
-    find if format2
+    find if format
     '''
     
     RIGISTER = ["A","X","L","B","S","T","F"]
     if OPERAND.find(",") != -1: #可能有多數OPERAND
         OPERANDS = OPERAND.split(',') #把變數整理成一個list
+        flag = False
         for i in OPERANDS: ##檢查是否都是rigister組成
+            flag = False
             for j in RIGISTER:
-                if(i!=j): return 3
+                if(i==j): flag = True
+            if not flag: return 3
         return 2
     
     for i in RIGISTER: ##檢查是否都是rigister組成
@@ -59,9 +62,9 @@ def search_symbol(string,LOCCTR):
     intermediate_file.write(f"{LOCCTR}\t{SYMBOL}\t{OPCODE}\t{OPERAND}\n") #write into intermediate_file
     
     if search_optable(OPCODE):
-        if(SYMBOL).find("+") != -1: #為format 4
-            return 4 #add LOCCTR
         return check_format2(OPERAND) 
+    elif (OPCODE).find("+") != -1: #為format 4
+        return 4 #add LOCCTR
     elif OPCODE == "WORD":
         return 3 #add LOCCTR
     elif OPCODE == "RESW":
@@ -72,6 +75,8 @@ def search_symbol(string,LOCCTR):
         temp = OPERAND.replace("C","").replace("\'","")
         if temp.find("X")!=-1: return 1 #如果有X則回傳1
         return len(temp) #add LOCCTR
+    elif OPCODE == "BASE":
+        return 0
     else:
         return 3
 
