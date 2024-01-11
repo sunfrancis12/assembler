@@ -64,6 +64,8 @@ def search_symbol(string,LOCCTR):
     if search_optable(OPCODE):
         return check_format2(OPERAND) 
     elif (OPCODE).find("+") != -1: #為format 4
+        symbol = SYMBOL.replace('+','')
+        sybol_table[symbol] = LOCCTR # record symbol and LOCCTR
         return 4 #add LOCCTR
     elif OPCODE == "WORD":
         return 3 #add LOCCTR
@@ -225,6 +227,7 @@ if __name__ == "__main__":
         #print(string)
         #gen_object(string)
         
+    print(sybol_table)
         
     intermediate_file.close() #close intermediate_file filestream
     
